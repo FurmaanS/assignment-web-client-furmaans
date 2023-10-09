@@ -39,6 +39,22 @@ class HTTPClient(object):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((host, port))
         return None
+    
+    def parse_url(self, data):
+        # parse the URL to get all its parts
+        parsed_url = urllib.parse.urlparse(data)
+
+        # get the host, port and path from the parsed url
+        host = parsed_url.hostname
+        port = parsed_url.port
+        path = parsed_url.path
+
+        if not port: # if no port is given use the default of 80
+            port = 80
+        if not path: # change an empty path to '/'
+            path = '/'
+
+        return host, port, path
 
     def get_code(self, data):
         # Take the data then extract the status code
@@ -80,17 +96,7 @@ class HTTPClient(object):
     def GET(self, url, args=None):
         try:
             # parse the URL to get all its parts
-            parsed_url = urllib.parse.urlparse(url)
-
-            # get the host, port and path from the parsed url
-            host = parsed_url.hostname
-            port = parsed_url.port
-            path = parsed_url.path
-
-            if not port: # if no port is given use the default of 80
-                port = 80
-            if not path: # change an empty path to '/'
-                path = '/'
+            host, port, path = self.parse_url(url)
 
             # establish connection
             self.connect(host, port)
@@ -114,9 +120,37 @@ class HTTPClient(object):
             return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
-        code = 500
-        body = ""
-        return HTTPResponse(code, body)
+        try:
+            # parse the URL to get all its parts
+            host, port, path = self.parse_url(url)
+
+            # establish connection
+            self.connect(host, port)
+
+            # format the GET request and send it
+            # this code was inspired by an example at https://www.geeksforgeeks.org/python-convert-dictionary-to-concatenated-string/
+            # concatenates dictionary key-value pairs into a string in the form 'key=value&key2=value2'
+            content = ' ' # content of the POST request that we will be sending
+            for value in args:
+                content = content + f"{value}={str(args[value])}&"
+            content = content[:-1].strip() # remove trailing '&' and any empty space
+
+            content_type = "application/x-www-form-urlencoded" # set the content type
+            content_length = len(content) # get the length of the content
+            
+            request = f"POST {path} HTTP/1.1\r\nHost: {host}\r\nConnection: Closed\r\nContent-Type: {content_type}\r\nContent-Length: {content_length}\r\n\r\n{content}"
+            
+            self.sendall(request)
+
+            # recieve the response
+            response = self.recvall(self.socket)
+        except:
+            print("An error occured!")
+            return
+        finally:
+            code = self.get_code(response)
+            body = self.get_body(response)
+            return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
         if (command == "POST"):
@@ -127,14 +161,20 @@ class HTTPClient(object):
 if __name__ == "__main__":
     client = HTTPClient()
     command = "GET"
-    # if (len(sys.argv) <= 1):
-    #     help()
-    #     sys.exit(1)
-    # elif (len(sys.argv) == 3):
-    #     print(client.command( sys.argv[2], sys.argv[1] ))
-    # else:
-    #     print(client.command( sys.argv[1] ))
+    if (len(sys.argv) <= 1):
+        help()
+        sys.exit(1)
+    elif (len(sys.argv) == 3):
+        print(client.command( sys.argv[2], sys.argv[1] ))
+    else:
+        print(client.command( sys.argv[1] ))
 
-    urlTEST = "http://www.httpbin.org/get"
+    # get_test = "http://www.httpbin.org/get"
+    # post_test = "http://www.httpbin.org/post"
+    # post_data = {
+    #     "Name" : "Kratos",
+    #     "Age" : "1055"
+    # }
 
-    print(client.GET(urlTEST))
+    # print(client.GET(get_test))
+    # print(client.POST(post_test, post_data))
