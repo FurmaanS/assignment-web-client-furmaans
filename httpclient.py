@@ -148,6 +148,8 @@ class HTTPClient(object):
             print("An error occured!")
             return
         finally:
+            # close connection
+            self.close()
             code = self.get_code(response)
             body = self.get_body(response)
             return HTTPResponse(code, body)
