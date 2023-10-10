@@ -128,22 +128,28 @@ class HTTPClient(object):
             self.connect(host, port)
 
             # format the GET request and send it
-            # this code was inspired by an example at https://www.geeksforgeeks.org/python-convert-dictionary-to-concatenated-string/
-            # concatenates dictionary key-value pairs into a string in the form 'key=value&key2=value2'
-            content = ' ' # content of the POST request that we will be sending
-            for value in args:
-                content = content + f"{value}={str(args[value])}&"
-            content = content[:-1].strip() # remove trailing '&' and any empty space
+            if args:
+                # this code was inspired by an example at https://www.geeksforgeeks.org/python-convert-dictionary-to-concatenated-string/
+                # concatenates dictionary key-value pairs into a string in the form 'key=value&key2=value2'
+                content = ' ' # content of the POST request that we will be sending
+                for key in args:
+                    value = str(args[key])
+                    content = content + f"{key}={value}&"
+                
+                content = re.sub(r'[^\S\r\n]+', '', content) # remove empty space but not \r or \n
+                content = content[:-1] # remove trailing '&'
+                content_length = len(content) # get the length of the content
+                content_type = "application/x-www-form-urlencoded" # set the content type
+                request = f"POST {path} HTTP/1.1\r\nHost: {host}\r\nConnection: Closed\r\nContent-Type: {content_type}\r\nContent-Length: {content_length}\r\n\r\n{content}"
+            else:
+                request = f"POST {path} HTTP/1.1\r\nHost: {host}\r\nConnection: Closed\r\nContent-Length: {0}\r\n\r\n"
 
-            content_type = "application/x-www-form-urlencoded" # set the content type
-            content_length = len(content) # get the length of the content
-            
-            request = f"POST {path} HTTP/1.1\r\nHost: {host}\r\nConnection: Closed\r\nContent-Type: {content_type}\r\nContent-Length: {content_length}\r\n\r\n{content}"
             
             self.sendall(request)
 
             # recieve the response
             response = self.recvall(self.socket)
+            # print("RESPONSE: ", response)
         except:
             print("An error occured!")
             return
@@ -152,6 +158,7 @@ class HTTPClient(object):
             self.close()
             code = self.get_code(response)
             body = self.get_body(response)
+            # print(f"CODE: {code}, BODY: {body}")
             return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
@@ -174,8 +181,10 @@ if __name__ == "__main__":
     # get_test = "http://www.httpbin.org/get"
     # post_test = "http://www.httpbin.org/post"
     # post_data = {
-    #     "Name" : "Kratos",
-    #     "Age" : "1055"
+    #     'a':'aaaaaaaaaaaaa',
+    #     'b':'bbbbbbbbbbbbbbbbbbbbbb',
+    #     'c':'c',
+    #     'd':'012345\r67890\n2321321\n\r'
     # }
 
     # print(client.GET(get_test))
