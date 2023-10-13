@@ -44,15 +44,18 @@ class HTTPClient(object):
         # parse the URL to get all its parts
         parsed_url = urllib.parse.urlparse(data)
 
-        # get the host, port and path from the parsed url
+        # get the host, port, path, and query from the parsed url
         host = parsed_url.hostname
         port = parsed_url.port
         path = parsed_url.path
+        query = parsed_url.query
 
         if not port: # if no port is given use the default of 80
             port = 80
         if not path: # change an empty path to '/'
             path = '/'
+        if query: # if there is a query add query to path
+            path += f"?{query}"
 
         return host, port, path
 
@@ -115,8 +118,10 @@ class HTTPClient(object):
             self.close()
 
             # return the response
+            header = self.get_headers(response)
             code = self.get_code(response)
             body = self.get_body(response)
+            print(f"{header}\r\n\r\n{body}")
             return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
@@ -156,9 +161,10 @@ class HTTPClient(object):
         finally:
             # close connection
             self.close()
+            header = self.get_headers(response)
             code = self.get_code(response)
             body = self.get_body(response)
-            # print(f"CODE: {code}, BODY: {body}")
+            print(f"{header}\r\n\r\n{body}")
             return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
