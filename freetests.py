@@ -250,7 +250,6 @@ class TestHTTPClient(unittest.TestCase):
         self.assertTrue(req.code == 200)
         print("Test Post Body: [%s]" % req.body)
         outargs = json.loads(req.body)
-        print(f"FS {args}")
         print(outargs.__class__)
         for key in args:
             self.assertTrue(args[key] == outargs[key][0], "Key [%s] not found" % key)
