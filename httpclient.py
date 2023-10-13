@@ -121,7 +121,7 @@ class HTTPClient(object):
             header = self.get_headers(response)
             code = self.get_code(response)
             body = self.get_body(response)
-            print(f"{header}\r\n\r\n{body}")
+            print(body)
             return HTTPResponse(code, body)
 
     def POST(self, url, args=None):
@@ -164,7 +164,7 @@ class HTTPClient(object):
             header = self.get_headers(response)
             code = self.get_code(response)
             body = self.get_body(response)
-            print(f"{header}\r\n\r\n{body}")
+            print(body)
             return HTTPResponse(code, body)
 
     def command(self, url, command="GET", args=None):
